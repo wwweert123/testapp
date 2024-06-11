@@ -62,7 +62,7 @@ python3 -c 'import secrets; print(secrets.token_hex(64))'
 1. GITHUB_TOKEN
 2. GITHUB_APP_SECRET_TOKEN
 
-It can be set as such
+It can be set as such in a .env file
 ```
 export GITHUB_TOKEN=<your-github-token>
 export GITHUB_APP_SECRET_TOKEN=<your-github-app-secret-token>

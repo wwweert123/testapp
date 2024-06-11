@@ -11,7 +11,7 @@ import sys
 import requests
 from flask import Flask
 from github import Github
-
+from dotenv import dotenv_values
 
 DEBUG = False  # True
 SHA1 = 'sha1'
@@ -23,7 +23,7 @@ def verify_request(request):
     """
     # see https://docs.github.com/en/developers/webhooks-and-events/securing-your-webhooks
 
-    webhook_secret_from_env = os.getenv('GITHUB_APP_SECRET_TOKEN')
+    webhook_secret_from_env = dotenv_values(".env")["GITHUB_APP_SECRET_TOKEN"]
     if webhook_secret_from_env is None:
         error("Webhook secret is not available via $GITHUB_APP_SECRET_TOKEN!")
 
@@ -87,7 +87,7 @@ def add_comment_to_pr(gh, repo_full_name, pr_number, comment):
     """
     Add a comment to the pull request
     """
-    gh_token = os.getenv('GITHUB_TOKEN')
+    gh_token = dotenv_values(".env")["GITHUB_TOKEN"]
     url = f"https://api.github.com/repos/{repo_full_name}/issues/{pr_number}/comments"
     headers = {
         'Authorization': f'token {gh_token}',
@@ -156,7 +156,7 @@ def create_app(gh):
 def main():
     """Main function."""
 
-    gh = Github(os.getenv('GITHUB_TOKEN'))
+    gh = Github(dotenv_values(".env")["GITHUB_TOKEN"])
     return create_app(gh)
 
 
