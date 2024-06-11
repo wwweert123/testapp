@@ -16,6 +16,29 @@ from dotenv import dotenv_values
 DEBUG = False  # True
 SHA1 = 'sha1'
 
+def debug_log(msg):
+    """Log event data to app.log"""
+    if DEBUG:
+        with open('app.log', 'a') as fh:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d-T%H:%M:%S")
+            fh.write('DEBUG [' + timestamp + '] ' + msg + '\n')
+
+class PullRequest(object):
+    """Pull request object."""
+
+    def __init__(self, pr_data, repo=None):
+        """Constructor."""
+        self.author = pr_data['user']['login']
+        self.head_sha = pr_data['head']['sha']
+        self.id = pr_data['number']
+        self.repo = repo
+
+    def __str__(self):
+        """String represenation of this instance."""
+        fields = ['id', 'author', 'head_sha', 'repo']
+        return ', '.join(x + '=' + str(getattr(self, x)) for x in fields)
+
+
 def verify_request(request):
     """
     Verify request by checking webhook secret in request header.
@@ -48,6 +71,68 @@ def verify_request(request):
             flask.abort(501)
 
 
+def handle_pr_label_event(gh, request, pr):
+    """
+    Handle adding of a label to a pull request.
+    """
+    # debug_log("Request body: %s" % pprint.pformat(request.json))
+
+    action = request.json['action']
+    label_name = request.json['label']['name']
+    user = request.json['sender']['login']
+
+    log("%(repo)s PR #%(id)s %(action)s by %(user)s: %(label)s" % {
+        'action': action,
+        'repo': pr.repo,
+        'id': pr.id,
+        'label': label_name,
+        'user': user,
+    })
+
+    # hostname = os.environ.get('HOSTNAME', 'UNKNOWN_HOSTNAME')
+
+    # only react if label was added by @boegel, is a 'test:*' label, and matches current host
+    if action == 'labeled' and user == 'wwweert123':
+        # and label_name.startswith('test:' + hostname)
+        repo = gh.get_repo(pr.repo)
+        issue = repo.get_issue(pr.id)
+
+        pr_target_account = request.json['repository']['owner']['login']
+
+        cmd = [
+            'eb',
+            '--from-pr',
+            str(pr.id),
+            '--robot',
+            '--force',
+            '--upload-test-report',
+        ]
+
+        if pr_target_account != 'easybuilders':
+            cmd.extend([
+                '--pr-target-account',
+                pr_target_account,
+            ])
+
+        log("Testing %s PR #%d by request of %s by running: %s" % (pr.repo, pr.id, user, ' '.join(cmd)))
+
+        msg_lines = [
+            "Fine, fine, I'm on it.",
+            "Started command: `%s`" % ' '.join(cmd),
+        ]
+
+        issue.create_comment('\n'.join(msg_lines))
+
+        process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        process
+        stderr, stdout, exit_code = process.stderr, process.stdout, process.returncode
+
+        log("Command '%s' completed, exit code %s" % (' '.join(cmd), exit_code))
+        log("Stdout:\n" + stdout)
+        log("Stderr:\n" + stderr)
+    log("label event detected")
+
+
 def handle_pr_event(gh, request):
     """
     Dummy handler for pull request events
@@ -63,6 +148,7 @@ def handle_pr_event(gh, request):
         action = event_data.get('action', 'unknown')
         pr_number = event_data.get('number', 'unknown')
         repo_full_name = request.json['repository']['full_name']
+        pr = PullRequest(request.json['pull_request'], repo=request.json['repository']['full_name'])
         log("Pull Request action: %s, number: %s" % (action, pr_number))
 
         # Add a comment to the pull request
@@ -70,6 +156,9 @@ def handle_pr_event(gh, request):
             comment = "Thank you for your pull request! We will review it soon."
         elif action == "closed":
             comment = ":("
+        elif action == "labeled":
+            handle_pr_label_event(gh, request, pr)
+            comment = "Labeled"
         else:
             comment = "Unrecognized action"
 
