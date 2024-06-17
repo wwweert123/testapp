@@ -27,6 +27,7 @@ pip install Waitress
 - Copy the created smee URL
 - run the following command on your server
 ```
+// Pre install node >= 18 or load nodejs from modules in compute nodes
 npm install smee
 npx smee -u <your-smee-url>
 ```
