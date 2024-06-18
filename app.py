@@ -90,9 +90,10 @@ def handle_pr_label_event(gh, request, pr):
     })
 
     # hostname = os.environ.get('HOSTNAME', 'UNKNOWN_HOSTNAME')
+    hostname = dotenv_values(".env")["HOSTNAME"]
 
     # only react if label was added by @boegel, is a 'test:*' label, and matches current host
-    if action == 'labeled' and user == 'wwweert123':
+    if action == 'labeled' and user == 'wwweert123' and label_name == hostname:
         # and label_name.startswith('test:' + hostname)
         repo = gh.get_repo(pr.repo)
         issue = repo.get_issue(pr.id)
