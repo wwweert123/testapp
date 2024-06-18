@@ -20,6 +20,11 @@ pip install PyGithub
 pip install Waitress
 ```
 
+- Install Python-dotenv
+```
+pip install python-dotenv
+```
+
 ## 1. Smee channel Creation
 
 - Create a smee channel url on this website (https://smee.io)
@@ -62,11 +67,13 @@ python3 -c 'import secrets; print(secrets.token_hex(64))'
 - You will need to set up two environmental variables 
 1. GITHUB_TOKEN
 2. GITHUB_APP_SECRET_TOKEN
+3. HOSTNAME
 
 It can be set as such in a .env file
 ```
-export GITHUB_TOKEN=<your-github-token>
-export GITHUB_APP_SECRET_TOKEN=<your-github-app-secret-token>
+GITHUB_TOKEN=<your-github-token>
+GITHUB_APP_SECRET_TOKEN=<your-github-app-secret-token>
+HOSTNAME=<your-host-name>
 ```
 
 ## 5. Starting up the flask app
